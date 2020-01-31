@@ -1,0 +1,101 @@
+#version 430 core
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+// 粒子データ
+struct Particle
+{
+  vec4 position;
+  vec4 velocity;
+  vec4 force;
+};
+
+// 粒子群データ
+layout(std430, binding = 0) buffer Particles
+{
+  Particle particle[];
+};
+
+// 球のデータ
+uniform vec4 sphere;
+
+// ばね定数
+uniform float spring = 1.0;
+
+// 減衰率
+uniform float attenuation = 5.0;
+
+// タイムステップ
+uniform float timestep = 0.01666667;
+
+// 粒子の影響範囲
+uniform float range = 0.5f;
+
+// ばねの自然長
+uniform float equilibrium = 0.1f;
+
+// 粒子の質量
+uniform float weight = 1.0f;
+
+void main()
+{
+  // ワークグループ ID をのまま頂点データのインデックスに使う
+  const uint i = gl_WorkGroupID.x;
+
+  // 物体の中心から粒子に向かうベクトルを求める
+  vec3 o = particle[i].position.xyz - sphere.xyz;
+
+  // 物体が粒子にめり込む長さを求める
+  float offset = range + sphere.w - length(o);
+
+  // 物体が粒子にめり込んでいたら
+  if (offset > 0.0) {
+
+    // めり込んだ分だけめり込んだ方向に粒子を移動させる
+    particle[i].position.xyz += offset * normalize(o);
+    particle[i].velocity.xyz = 10 * vec3(normalize(o.xy), 0.0);
+  }
+
+  // すべての粒子 j について
+  for (int j = 0; j < gl_WorkGroupSize.x; ++j) {
+
+    // j が i と同じ粒子だったら飛ばす
+    if (i == j) continue;
+
+    // 粒子ij間の距離を求める
+    vec3 r =  particle[j].position.xyz -  particle[i].position.xyz;
+    float pr = length(r);
+
+    // 粒子ijが互いの影響範囲外にあれば飛ばす
+    if(pr >= range) continue;
+
+    // 3次エルミートスプライン関数
+    float w = smoothstep(1.0, 0.0, pr / range);
+
+    // フックの法則によるばねの力
+    float springForce = (pr - equilibrium) * spring;
+
+    // 粒子jから粒子iにかかる力
+    float force = w * springForce;
+
+    //粒子ij間のベクトルを求める(粒子が伸びる方向)
+    vec3 e = r / pr;
+
+    // 粒子iに力を累積する
+    particle[i].force.xyz += force * e;
+  }
+
+  // 粒子iの加速度を求める
+  vec3 a = particle[i].force.xyz / weight - particle[i].velocity.xyz * attenuation;
+
+  // timestep 秒後の速度
+  vec3 v = particle[i].velocity.xyz + a * timestep;
+
+  // 粒子 i の速度を更新する
+  particle[i].velocity.xyz = v;
+
+  // timestep 秒後の位置(修正オイラー法)
+  vec3 p = particle[i].position.xyz + 0.5f * ((v + particle[i].velocity.xyz) * timestep);
+
+  // 粒子 i の位置を更新する
+  particle[i].position.xyz = p;
+}
