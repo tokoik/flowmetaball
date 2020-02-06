@@ -15,8 +15,8 @@ layout(std430, binding = 0) buffer Particles
   Particle particle[];
 };
 
-// 球のデータ
-uniform vec4 sphere;
+// ばねの自然長
+uniform float equilibrium = 0.1;
 
 // ばね定数
 uniform float spring = 1.0;
@@ -24,17 +24,17 @@ uniform float spring = 1.0;
 // 減衰率
 uniform float attenuation = 5.0;
 
+// 粒子の質量
+uniform float weight = 1.0;
+
+// 粒子の影響範囲
+uniform float range = 0.5;
+
 // タイムステップ
 uniform float timestep = 0.01666667;
 
-// 粒子の影響範囲
-uniform float range = 0.5f;
-
-// ばねの自然長
-uniform float equilibrium = 0.1f;
-
-// 粒子の質量
-uniform float weight = 1.0f;
+// 球のデータ
+uniform vec4 sphere;
 
 void main()
 {
@@ -85,7 +85,7 @@ void main()
   }
 
   // 粒子iの加速度を求める
-  vec3 a = particle[i].force.xyz / weight - particle[i].velocity.xyz * attenuation;
+  vec3 a = (particle[i].force.xyz - particle[i].velocity.xyz * attenuation) / weight;
 
   // timestep 秒後の速度
   vec3 v = particle[i].velocity.xyz + a * timestep;

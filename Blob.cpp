@@ -29,6 +29,12 @@ Blob::Blob(const Particles &particles)
   , mnLoc(glGetUniformLocation(rectangleShader, "mn"))
   , imageLoc(glGetUniformLocation(rectangleShader, "image"))
   , thresholdLoc(glGetUniformLocation(rectangleShader, "threshold"))
+  , springLoc(glGetUniformLocation(updateShader, "spring"))
+  , attenuationLoc(glGetUniformLocation(updateShader, "attenuation"))
+  , timestepLoc(glGetUniformLocation(updateShader, "timestep"))
+  , rangeLoc(glGetUniformLocation(updateShader, "range"))
+  , equilibriumLoc(glGetUniformLocation(updateShader, "equilibrium"))
+  , weightLoc(glGetUniformLocation(updateShader, "weight"))
   , sphereLoc(glGetUniformLocation(updateShader, "sphere"))
 {
   // uniform block の場所を 0 番の結合ポイントに結びつける
@@ -331,10 +337,30 @@ void Blob::drawMetaball(const GgMatrix &mp, const GgMatrix &mv,
 }
 
 // 更新
-void Blob::update(float x, float y, float z, float r) const
+void Blob::update(GLfloat x, GLfloat y, GLfloat z, GLfloat r,
+  GLfloat equilibrium, GLfloat spring, GLfloat attenuation,
+  GLfloat weight, GLfloat range, GLfloat timestep) const
 {
   // 更新用のシェーダプログラムの使用開始
   glUseProgram(updateShader);
+
+  // ばねの自然長を設定する
+  glUniform1f(equilibriumLoc, equilibrium);
+
+  // ばね定数を設定する
+  glUniform1f(springLoc, spring);
+
+  // 空気抵抗を設定する
+  glUniform1f(attenuationLoc, attenuation);
+
+  // 粒子の質量を設定する
+  glUniform1f(weightLoc, weight);
+
+  // 粒子の影響範囲を設定する
+  glUniform1f(rangeLoc, range);
+
+  // タイムステップを設定する
+  glUniform1f(timestepLoc, timestep);
 
   // 球のデータを設定する
   glUniform4f(sphereLoc, x, y, z, r);

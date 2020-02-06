@@ -102,6 +102,28 @@ class Blob
   // 閾値
   const GLint thresholdLoc;
 
+  //
+  // 粒子位置の更新
+  //
+
+  // ばねの自然長
+  const GLint equilibriumLoc;
+
+  // ばね定数
+  const GLint springLoc;
+
+  // 減衰率
+  const GLint attenuationLoc;
+
+  // 粒子の質量
+  const GLint weightLoc;
+
+  // 粒子の影響範囲
+  const GLint rangeLoc;
+
+  // タイムステップ
+  const GLint timestepLoc;
+
   // 衝突させる球
   const GLint sphereLoc;
 
@@ -130,6 +152,8 @@ public:
     const GgApplication::Window &window, const GgSimpleShader::LightBuffer &light) const;
 
   // 更新
-  void update(float x, float y, float z, float r) const;
+  void update(GLfloat x, GLfloat y, GLfloat z, GLfloat r,
+    GLfloat equilibrium = 0.1f, GLfloat spring = 1.0f, GLfloat attenuation = 5.0f,
+    GLfloat weight = 1.0f, GLfloat range = 0.5f, GLfloat timestep = 0.01666667f) const;
 
 };

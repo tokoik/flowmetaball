@@ -307,7 +307,9 @@ void GgApplication::run()
     const GgMatrix projection(ggPerspective(cameraFovy, window.getAspect(), cameraNear, cameraFar));
 
     // モデル変換行列を求める
-    const GgMatrix model(window.getTrackball());
+    static GLfloat angle(0.0f);
+    const GgMatrix model(ggRotateY(angle));
+    //const GgMatrix model(window.getTrackball());
 
     // モデルビュー変換行列を求める
     const GgMatrix modelview(view * model);
@@ -335,44 +337,25 @@ void GgApplication::run()
     material.select();
     object->draw();
 
-    // 粒子群オブジェクトを更新する
-    blob->update(sphereX, sphereY, sphereZ, sphereRadius);
-
     //
     // ユーザインタフェース
     //
-
-    // ダイアログウィンドウを作る
-    ImGui::SetNextWindowSize(ImVec2(200, 400));
-    ImGui::Begin("Test Window");
-    ImGui::Text("Sphere X: %f", sphereX);
-    ImGui::Text("Sphere Y: %f", sphereY);
-    ImGui::Text("Sphere Z: %f", sphereZ);
-
-    static char buf[256] = "aaa";
-    if (ImGui::InputText("string", buf, 256)) {
-      printf("InputText\n");
-    }
-
-    static float f = 0.0f;
-    if (ImGui::SliderFloat("float", &f, 0.0f, 1.0f)) {
-      printf("SliderFloat\n");
-    }
-
-    if (ImGui::Button("Quit")) {
-      glfwSetWindowShouldClose(window.get(), GL_TRUE);
-    }
-
-    ImGui::End();
-
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    // カラーバッファを入れ替える
-    window.swapBuffers();
-
-    // 定期的に粒子群オブジェクトをリセットする
-    if (glfwGetTime() > elapsed + interval)
+    ImGui::SetNextWindowSize(ImVec2(256, 228));
+    ImGui::Begin("Control panel");
+    ImGui::Text("Position:%7.2f,%7.2f,%7.2f", sphereX, sphereY, sphereZ);
+    ImGui::SliderAngle("Angle", &angle, -180.0f, 180.0f);
+    static GLfloat equilibrium(0.2f);
+    ImGui::SliderFloat("Length", &equilibrium, 0.0f, 1.0f);
+    static GLfloat spring(1.0f);
+    ImGui::SliderFloat("Constant", &spring, 0.0f, 5.0f);
+    static GLfloat attenation(5.0f);
+    ImGui::SliderFloat("Attenation", &attenation, 0.0f, 10.0f);
+    static GLfloat weight(1.0f);
+    ImGui::SliderFloat("Weight", &weight, 0.01f, 5.0f);
+    static GLfloat range(0.5f);
+    ImGui::SliderFloat("Range", &range, 0.01f, 1.0f);
+    ImGui::Text("Frame rate: %6.2f fps", ImGui::GetIO().Framerate);
+    if (ImGui::Button("New cloud"))
     {
       // 粒子を捨てる
       initial.clear();
@@ -386,7 +369,23 @@ void GgApplication::run()
         // 中心からの距離に対して密度が正規分布に従う点の玉を生成する
         generateParticles(initial, pCount, cx, cy, cz, rn, pMean, pDeviation);
       }
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Quit")) glfwSetWindowShouldClose(window.get(), GL_TRUE);
+    ImGui::End();
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
+    // 粒子群オブジェクトを更新する
+    blob->update(sphereX, sphereY, sphereZ, sphereRadius,
+      equilibrium, spring, attenation, weight, range);
+
+    // カラーバッファを入れ替える
+    window.swapBuffers();
+
+    // 定期的に粒子群オブジェクトをリセットする
+    if (glfwGetTime() > elapsed + interval)
+    {
       // 粒子の初期位置を変更する
       blob->initialize(initial);
 
@@ -394,4 +393,8 @@ void GgApplication::run()
       elapsed += interval;
     }
   }
+
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext();
 }
