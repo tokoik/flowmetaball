@@ -333,7 +333,6 @@ void Blob::drawMetaball(const GgMatrix &mp, const GgMatrix &mv,
 // 更新
 void Blob::update(float x, float y, float z, float r) const
 {
-
   // 更新用のシェーダプログラムの使用開始
   glUseProgram(updateShader);
 

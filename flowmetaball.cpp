@@ -6,6 +6,11 @@
 // 粒子群オブジェクト
 #include "Blob.h"
 
+// GUI
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+
 // 標準ライブラリ
 #include <memory>
 #include <random>
@@ -154,6 +159,35 @@ void GgApplication::run()
   // ウィンドウを作成する
   Window window("FlowMetaball");
 
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+  //ImGui::StyleColorsClassic();
+
+  // Setup Platform/Renderer bindings
+  ImGui_ImplGlfw_InitForOpenGL(window.get(), true);
+  ImGui_ImplOpenGL3_Init("#version 430");
+
+  // Load Fonts
+  // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
+  // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
+  // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+  // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+  // - Read 'docs/FONTS.txt' for more instructions and details.
+  // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+  //io.Fonts->AddFontDefault();
+  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
+  //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+  //IM_ASSERT(font != NULL);
+
   //
   // 粒子群オブジェクトの作成
   //
@@ -255,13 +289,17 @@ void GgApplication::run()
 #endif
 
   // 時計をリセットする
-  glfwSetTime(0.0);
+  double  elapsed(0.0);
 
   //
   // 描画
   //
   while (window)
   {
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
     // ウィンドウを消去する
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -287,13 +325,10 @@ void GgApplication::run()
     // 初期位置
     float sphereX = 0.0f;
     float sphereY = 0.0f;
-    float sphereZ = 3.0f - static_cast<float>(glfwGetTime()) * dSpeed;
-
-    // 雲がちぎれる表現                    球の中心座標 x        y        z
-    const GgMatrix animation(modelview * ggTranslate(sphereX, sphereY, sphereZ));
+    float sphereZ = 3.0f - static_cast<float>(glfwGetTime() - elapsed) * dSpeed;
 
     // オブジェクトのシェーダプログラムの使用開始
-    simpleShader.use(projection, animation, light);
+    simpleShader.use(projection, modelview.translate(sphereX, sphereY, sphereZ), light);
 
     // アルファブレンディングを無効にして図形を描画する
     glDisable(GL_BLEND);
@@ -303,11 +338,41 @@ void GgApplication::run()
     // 粒子群オブジェクトを更新する
     blob->update(sphereX, sphereY, sphereZ, sphereRadius);
 
+    //
+    // ユーザインタフェース
+    //
+
+    // ダイアログウィンドウを作る
+    ImGui::SetNextWindowSize(ImVec2(200, 400));
+    ImGui::Begin("Test Window");
+    ImGui::Text("Sphere X: %f", sphereX);
+    ImGui::Text("Sphere Y: %f", sphereY);
+    ImGui::Text("Sphere Z: %f", sphereZ);
+
+    static char buf[256] = "aaa";
+    if (ImGui::InputText("string", buf, 256)) {
+      printf("InputText\n");
+    }
+
+    static float f = 0.0f;
+    if (ImGui::SliderFloat("float", &f, 0.0f, 1.0f)) {
+      printf("SliderFloat\n");
+    }
+
+    if (ImGui::Button("Quit")) {
+      glfwSetWindowShouldClose(window.get(), GL_TRUE);
+    }
+
+    ImGui::End();
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
     // カラーバッファを入れ替える
     window.swapBuffers();
 
     // 定期的に粒子群オブジェクトをリセットする
-    if (glfwGetTime() > interval)
+    if (glfwGetTime() > elapsed + interval)
     {
       // 粒子を捨てる
       initial.clear();
@@ -322,8 +387,11 @@ void GgApplication::run()
         generateParticles(initial, pCount, cx, cy, cz, rn, pMean, pDeviation);
       }
 
+      // 粒子の初期位置を変更する
       blob->initialize(initial);
-      glfwSetTime(0.0);
+
+      // 経過時間を更新する
+      elapsed += interval;
     }
   }
 }
