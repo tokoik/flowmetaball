@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "GgApplication.h"
+#include "Window.h"
 #include "Particle.h"
 
 //
@@ -149,7 +149,7 @@ public:
 
   // メタボールで描画
   void drawMetaball(const GgMatrix &mp, const GgMatrix &mv,
-    const GgApplication::Window &window, const GgSimpleShader::LightBuffer &light) const;
+    const Window &window, const GgSimpleShader::LightBuffer &light) const;
 
   // 更新
   void update(GLfloat x, GLfloat y, GLfloat z, GLfloat r,

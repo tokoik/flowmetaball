@@ -177,7 +177,7 @@ void Blob::draw(const GgMatrix &mp, const GgMatrix &mv) const
 
 // メタボールで描画
 void Blob::drawMetaball(const GgMatrix &mp, const GgMatrix &mv,
-  const GgApplication::Window &window, const GgSimpleShader::LightBuffer &light) const
+  const Window &window, const GgSimpleShader::LightBuffer &light) const
 {
 
   // 法線変換行列

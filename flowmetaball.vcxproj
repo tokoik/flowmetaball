@@ -133,7 +133,7 @@
   <ItemGroup>
     <ClInclude Include="Blob.h" />
     <ClInclude Include="gg.h" />
-    <ClInclude Include="GgApplication.h" />
+    <ClInclude Include="Window.h" />
     <ClInclude Include="include\imconfig.h" />
     <ClInclude Include="include\imgui.h" />
     <ClInclude Include="include\imgui_impl_glfw.h" />
